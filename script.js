@@ -466,7 +466,7 @@ function starteNachladen() {
 }
 
 function mousePressed() {
-  if (magazin === 0) {
+  if (!spieler || !levelAuswahl.hidden || magazin === 0) {
     return;
   }
 
