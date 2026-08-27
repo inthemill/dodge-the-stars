@@ -51,6 +51,11 @@
       font-weight: bold;
     }
 
+    .magazin-anzeige.schnelles-nachladen {
+      border-color: #facc15;
+      box-shadow: 0 0 18px #facc15;
+    }
+
     details {
       margin-top: 10px;
       border-top: 1px solid rgba(148, 163, 184, 0.35);
@@ -90,6 +95,10 @@
 
     strong {
       color: var(--accent);
+    }
+
+    .goldenes-herz {
+      color: #facc15;
     }
 
     .spiel-ende {
@@ -210,10 +219,10 @@
 <body>
   <div class="hud">
     <h1>Catch the Stars</h1>
-    <p>Punkte: <strong id="score">0</strong> | Best: <strong id="best">0</strong> | Leben: <strong id="leben">3</strong></p>
+    <p>Punkte: <strong id="score">0</strong> | Best: <strong id="best">0</strong> | Leben: <strong id="leben">3</strong><strong class="goldenes-herz" id="goldenes-herz" hidden>&#9829;</strong></p>
   </div>
 
-  <div class="magazin-anzeige">Magazin: <strong id="magazin">5 / 5</strong></div>
+  <div class="magazin-anzeige" id="magazin-anzeige">Magazin: <strong id="magazin">5 / 5</strong></div>
 
   <div class="level-auswahl" id="level-auswahl">
     <details>
@@ -225,6 +234,10 @@
         <li>Triff Sterne mit deinen Schüssen, um Punkte zu erhalten.</li>
         <li>Berührt ein Stern dein Raumschiff, verlierst du ein Leben.</li>
         <li>Das Magazin hat fünf Schüsse und lädt jede Sekunde einen Schuss nach.</li>
+        <li>Herzen erscheinen alle 30 Sekunden und geben dir ein Leben zurück.</li>
+        <li>Lootboxen geben dir zufällig einen Laser, ein Schild, schnelle Nachladung oder ein goldenes Zusatzherz.</li>
+        <li>Das Schild schützt dich fünf Sekunden, der große Laser trifft zwei Sekunden lang Sterne.</li>
+        <li>Je länger die Runde dauert, desto schneller fallen die Sterne.</li>
         <li>Sterne am unteren Rand verschwinden. Das Spiel endet, wenn du keine Leben mehr hast.</li>
       </ul>
     </details>
