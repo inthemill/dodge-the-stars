@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Noes Weltraum-Lernspiel</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #0f172a;
+      --text: #e2e8f0;
+      --accent: #38bdf8;
+      --accent2: #facc15;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #020817, #111827);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .hud {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      padding: 12px 16px;
+      background: var(--panel);
+      border: 1px solid #3e485c;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px #000000;
+    }
+
+    details {
+      margin-top: 10px;
+      border-top: 1px solid rgba(148, 163, 184, 0.35);
+      padding-top: 10px;
+    }
+
+    summary {
+      cursor: pointer;
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+      font-size: 0.9rem;
+    }
+
+    li+li {
+      margin-top: 4px;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 1.2rem;
+      color: var(--accent2);
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    strong {
+      color: var(--accent);
+    }
+
+    .spiel-ende {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #5b7ed4;
+    }
+
+    .spiel-ende[hidden] {
+      display: none;
+    }
+
+    .spiel-ende-inhalt {
+      width: min(100%, 360px);
+      padding: 28px;
+      text-align: center;
+      background: #172033;
+      border: 1px solid #929323;
+      border-radius: 8px;
+      box-shadow: 0 16px 40px #000000;
+    }
+
+    .spiel-ende h2 {
+      margin: 0 0 12px;
+      color: var(--accent2);
+    }
+
+    .spiel-ende p {
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #082f49;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #7dd3fc;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="hud">
+    <h1>Catch the Stars</h1>
+    <p>Punkte: <strong id="score">0</strong> | Best: <strong id="best">0</strong> | Leben: <strong id="leben">3</strong></p>
+    <details>
+      <summary>Anleitung</summary>
+      <ul>
+        <li>Klicke auf das Spielfeld, um einen Schuss nach oben abzufeuern.</li>
+        <li>Bewege dein Raumschiff mit den Pfeiltasten links und rechts, mit A und D oder mit der Maus.</li>
+        <li>Fange die bunten Sterne, bevor sie den gruenen Boden erreichen.</li>
+        <li>Jeder gefangene Stern gibt einen Punkt.</li>
+        <li>Wenn ein Stern den Boden erreicht, verlierst du ein Leben. Das Spiel endet, wenn du keine Leben mehr hast.</li>
+        <li>Best zeigt deinen hoechsten Punktestand, bis du die Seite neu laedst.</li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="spiel-ende" id="spiel-ende" hidden>
+    <div class="spiel-ende-inhalt">
+      <h2>Game Over</h2>
+      <p>Deine Punkte: <strong id="spiel-ende-punkte">0</strong></p>
+      <button id="neu-starten-knopf" type="button">Neu starten</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
