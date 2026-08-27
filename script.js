@@ -4,17 +4,28 @@ let bestePunkte = 0;
 const MAX_MAGAZIN = 5;
 let magazin = MAX_MAGAZIN;
 let nachladeTimerId = null;
+let letzteHerzZeit = 0;
+let naechsteSuperkraftZeit = 0;
+let superLaserEndZeit = 0;
+let schildEndZeit = 0;
+let nachladeZeit = 1000;
+let schnellesNachladenEndZeit = 0;
+let hatGoldenesHerz = false;
+let rundenStartZeit = 0;
 let sternIntervall = 30;
 let sternGeschwindigkeitMin = 2;
 let sternGeschwindigkeitMax = 4;
 let spieler;
 let raumschiffBild;
+let lootboxBild;
 let sterne = []; // [] erzeugt ein leeres Array, also eine Leere Liste
 let schuesse = [];
 let punkteText;
 let bestePunkteText;
 let lebenText;
+let goldenesHerzText;
 let magazinText;
+let magazinAnzeige;
 let spielEndeAnzeige;
 let spielEndePunkteText;
 let neuStartenKnopf;
@@ -24,6 +35,7 @@ let levelKnoepfe;
 // p5.js laedt Bilder vor dem Start des Spiels.
 function preload() {
   raumschiffBild = loadImage("raumschiff.svg");
+  lootboxBild = loadImage("lootbox.svg");
 }
 
 // Hier wird das Spiel vorbereitet.
@@ -44,7 +56,9 @@ function setup() {
   punkteText = document.getElementById("score");
   bestePunkteText = document.getElementById("best");
   lebenText = document.getElementById("leben");
+  goldenesHerzText = document.getElementById("goldenes-herz");
   magazinText = document.getElementById("magazin");
+  magazinAnzeige = document.getElementById("magazin-anzeige");
   spielEndeAnzeige = document.getElementById("spiel-ende");
   spielEndePunkteText = document.getElementById("spiel-ende-punkte");
   neuStartenKnopf = document.getElementById("neu-starten-knopf");
@@ -75,6 +89,9 @@ function draw() {
   aktualisiereSchuesse();
   zeichneSchuesse();
   pruefeKollisionen();
+  zeichneSuperLaser();
+  zeichneSchild();
+  aktualisiereFaehigkeiten();
 }
 
 // Die Pfeiltasten und A/D bewegen den Spieler.
@@ -105,6 +122,19 @@ function zeichneSpieler() {
 // Je nach gewaehltem Level erscheint ein neuer Stern.
 function erzeugeSterne() {
   if (frameCount % sternIntervall === 0) {
+    let istHerz = millis() - letzteHerzZeit >= 30000;
+    let istSuperkraft = !istHerz && millis() >= naechsteSuperkraftZeit;
+    if (istHerz) {
+      letzteHerzZeit = millis();
+    }
+    if (istSuperkraft) {
+      naechsteSuperkraftZeit = millis() + random(40000, 60000);
+    }
+
+    let geschwindigkeitsBonus = min(
+      floor((millis() - rundenStartZeit) / 10000) * 0.2,
+      2
+    );
     let stern = {
       // random erzeugt eine zufaellige Zahl: https://p5js.org/reference/p5/random/
       positionX: random(20, width - 20), // Zufallsposition zwischen linkem und rechtem Rand
@@ -112,8 +142,10 @@ function erzeugeSterne() {
       // random bestimmt auch die Groesse des Sterns: https://p5js.org/reference/p5/random/
       groesse: random(12, 22), // Zufallsgroesse zwischen 12 und 22
       // random bestimmt die Fallgeschwindigkeit: https://p5js.org/reference/p5/random/
-      geschwindigkeit: random(sternGeschwindigkeitMin, sternGeschwindigkeitMax),
+      geschwindigkeit: random(sternGeschwindigkeitMin, sternGeschwindigkeitMax) + geschwindigkeitsBonus,
       farbe: erzeugeSternFarbe(),
+      istHerz: istHerz,
+      istSuperkraft: istSuperkraft,
     };
 
     // push fügt dem Array sterne ein neues Element (Stern) am Ende hinzu.
@@ -145,15 +177,50 @@ function aktualisiereSterne() {
 // Alle Sterne werden auf dem Spielfeld angezeigt.
 function zeichneSterne() {
   for (let stern of sterne) {
+    if (stern.istSuperkraft) {
+      imageMode(CENTER);
+      image(lootboxBild, stern.positionX, stern.positionY, 42, 42);
+      continue;
+    }
+
+    if (stern.istHerz) {
+      zeichneHerz(stern);
+      continue;
+    }
+
     // fill legt die Farbe des aktuellen Sterns fest: https://p5js.org/reference/p5/fill/
     fill(stern.farbe);
-    // circle zeichnet den aktuellen Stern als Kreis: https://p5js.org/reference/p5/circle/
-    circle(
-      stern.positionX, // Waagerechte Position des Sterns
-      stern.positionY, // Senkrechte Position des Sterns
-      stern.groesse // Durchmesser des Sterns
+    zeichneStern(stern);
+  }
+}
+
+function zeichneStern(stern) {
+  let aussenRadius = stern.groesse / 2;
+  let innenRadius = aussenRadius / 2;
+  beginShape();
+  for (let zacke = 0; zacke < 10; zacke++) {
+    let radius = zacke % 2 === 0 ? aussenRadius : innenRadius;
+    let winkel = -HALF_PI + zacke * PI / 5;
+    vertex(
+      stern.positionX + cos(winkel) * radius,
+      stern.positionY + sin(winkel) * radius
     );
   }
+  endShape(CLOSE);
+}
+
+function zeichneHerz(herz) {
+  fill("#ff0000");
+  circle(herz.positionX - herz.groesse / 4, herz.positionY - herz.groesse / 6, herz.groesse / 2);
+  circle(herz.positionX + herz.groesse / 4, herz.positionY - herz.groesse / 6, herz.groesse / 2);
+  triangle(
+    herz.positionX - herz.groesse / 2,
+    herz.positionY,
+    herz.positionX + herz.groesse / 2,
+    herz.positionY,
+    herz.positionX,
+    herz.positionY + herz.groesse / 2
+  );
 }
 // Die Sterne fallen nach unten.
 function aktualisiereSchuesse () {
@@ -167,11 +234,61 @@ function aktualisiereSchuesse () {
 }
 
 function zeichneSchuesse() {
-  fill("#ff0000");
   for (let schuss of schuesse) {
-    circle(schuss.positionX, schuss.positionY, 10);
+    rectMode(CENTER);
+    fill("#ff0000");
+    rect(schuss.positionX, schuss.positionY, 8, 20, 4);
+    fill("#fff7ed");
+    rect(schuss.positionX, schuss.positionY, 3, 16, 2);
   }
 }
+
+function zeichneSuperLaser() {
+  if (millis() >= superLaserEndZeit) {
+    return;
+  }
+
+  rectMode(CENTER);
+  fill("#ff0000");
+  rect(spieler.positionX, spieler.positionY / 2, 40, spieler.positionY, 12);
+  fill("#fff7ed");
+  rect(spieler.positionX, spieler.positionY / 2, 16, spieler.positionY, 8);
+}
+
+function zeichneSchild() {
+  if (millis() >= schildEndZeit) {
+    return;
+  }
+
+  fill(56, 189, 248, 70);
+  stroke("#38bdf8");
+  strokeWeight(5);
+  circle(spieler.positionX, spieler.positionY, 115);
+  noStroke();
+}
+
+function aktiviereZufaelligeSuperkraft() {
+  let superkraft = floor(random(4));
+  if (superkraft === 0) {
+    superLaserEndZeit = millis() + 2000;
+  } else if (superkraft === 1) {
+    schildEndZeit = millis() + 5000;
+  } else if (superkraft === 2) {
+    nachladeZeit = 250;
+    schnellesNachladenEndZeit = millis() + 10000;
+  } else {
+    hatGoldenesHerz = true;
+    leben = 4;
+  }
+}
+
+function aktualisiereFaehigkeiten() {
+  if (nachladeZeit === 250 && millis() >= schnellesNachladenEndZeit) {
+    nachladeZeit = 1000;
+    aktualisiereAnzeige();
+  }
+}
+
 // Hier wird geprueft, ob Sterne das Raumschiff oder einen Schuss treffen.
 function pruefeKollisionen() {
   for (let index = sterne.length - 1; index >= 0; index = index -1) {
@@ -181,17 +298,43 @@ function pruefeKollisionen() {
     let rechterRandSpieler = spieler.positionX + spieler.breite / 2;
     let obererRandSpieler = spieler.positionY - spieler.hoehe / 2;
     let untererRandSpieler = spieler.positionY + spieler.hoehe / 2;
+    let schildGetroffen = millis() < schildEndZeit &&
+      dist(stern.positionX, stern.positionY, spieler.positionX, spieler.positionY) <
+        57.5 + stern.groesse / 2;
+    if (schildGetroffen && !stern.istHerz && !stern.istSuperkraft) {
+      sterne.splice(index, 1);
+      continue;
+    }
+
     if (linkerRandSpieler < stern.positionX &&
         rechterRandSpieler > stern.positionX &&
         obererRandSpieler < stern.positionY &&
         untererRandSpieler > stern.positionY) {
       sterne.splice(index, 1);
-      leben -= 1;
+      if (stern.istSuperkraft) {
+        aktiviereZufaelligeSuperkraft();
+      } else if (stern.istHerz) {
+        leben = min(leben + 1, hatGoldenesHerz ? 4 : 3);
+      } else {
+        leben -= 1;
+        if (hatGoldenesHerz && leben <= 3) {
+          hatGoldenesHerz = false;
+        }
+      }
       aktualisiereAnzeige();
       if (leben <= 0) {
         beendeSpiel();
         return;
       }
+      continue;
+    }
+
+    if (!stern.istHerz && !stern.istSuperkraft && millis() < superLaserEndZeit &&
+        abs(stern.positionX - spieler.positionX) < 20) {
+      sterne.splice(index, 1);
+      punkte += 1;
+      bestePunkte = max(bestePunkte, punkte);
+      aktualisiereAnzeige();
       continue;
     }
 
@@ -265,6 +408,14 @@ function starteLevel(level) {
     clearTimeout(nachladeTimerId);
   }
   nachladeTimerId = null;
+  rundenStartZeit = millis();
+  letzteHerzZeit = millis();
+  naechsteSuperkraftZeit = millis() + random(40000, 60000);
+  superLaserEndZeit = 0;
+  schildEndZeit = 0;
+  nachladeZeit = 1000;
+  schnellesNachladenEndZeit = 0;
+  hatGoldenesHerz = false;
   spieler.positionX = width / 2;
   aktualisiereAnzeige();
   levelAuswahl.hidden = true;
@@ -277,7 +428,9 @@ function aktualisiereAnzeige() {
   punkteText.textContent = punkte;
   bestePunkteText.textContent = bestePunkte;
   lebenText.textContent = leben;
+  goldenesHerzText.hidden = !hatGoldenesHerz;
   magazinText.textContent = `${magazin} / ${MAX_MAGAZIN}`;
+  magazinAnzeige.classList.toggle("schnelles-nachladen", nachladeZeit === 250);
 }
 
 // Der gruene Boden zeigt das Ende des Spielfelds.
@@ -309,7 +462,7 @@ function starteNachladen() {
     magazin += 1;
     aktualisiereAnzeige();
     starteNachladen();
-  }, 1000);
+  }, nachladeZeit);
 }
 
 function mousePressed() {
