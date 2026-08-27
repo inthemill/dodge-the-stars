@@ -30,7 +30,7 @@ jobs:
           SSH_USER: ${{ secrets.CYON_USER }}
           TARGET_PATH: public_html/dodge-the-stars
         run: |
-          tar -cf dist.tar index.html script.js raumschiff.svg
+          tar -cf dist.tar index.html script.js raumschiff.svg lootbox.svg
           ssh "$SSH_USER@$SSH_HOST" "mkdir -p '$TARGET_PATH' && rm -rf '$TARGET_PATH'/*"
           scp dist.tar "$SSH_USER@$SSH_HOST:$TARGET_PATH/"
           ssh "$SSH_USER@$SSH_HOST" "cd '$TARGET_PATH' && tar -xf dist.tar && rm dist.tar"
