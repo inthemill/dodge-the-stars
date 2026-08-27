@@ -196,17 +196,23 @@ function pruefeKollisionen() {
     }
 
     let abstandSchuss = 1000;
-    for (let schuss of schuesse) {
+    let getroffenerSchussIndex = -1;
+    for (let schussIndex = 0; schussIndex < schuesse.length; schussIndex++) {
+      let schuss = schuesse[schussIndex];
       let abstandDieserSchuss = dist(
         schuss.positionX,
         schuss.positionY,
         stern.positionX,
         stern.positionY
       );
-      abstandSchuss = min(abstandSchuss, abstandDieserSchuss);
+      if (abstandDieserSchuss < abstandSchuss) {
+        abstandSchuss = abstandDieserSchuss;
+        getroffenerSchussIndex = schussIndex;
+      }
     }
     if (abstandSchuss < (stern.groesse + 10) / 2) {
       sterne.splice(index, 1);
+      schuesse.splice(getroffenerSchussIndex, 1);
       punkte += 1;
       // max gibt den groesseren von zwei Werten zurueck: https://p5js.org/reference/p5/max/
       bestePunkte = max(bestePunkte, punkte);
