@@ -38,6 +38,19 @@
       box-shadow: 0 10px 30px #000000;
     }
 
+    .magazin-anzeige {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      padding: 12px 18px;
+      background: var(--panel);
+      border: 1px solid #3e485c;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px #000000;
+      font-size: 1.35rem;
+      font-weight: bold;
+    }
+
     details {
       margin-top: 10px;
       border-top: 1px solid rgba(148, 163, 184, 0.35);
@@ -48,6 +61,10 @@
       cursor: pointer;
       color: var(--accent);
       font-weight: bold;
+    }
+
+    .level-auswahl summary {
+      color: #ffffff;
     }
 
     ul {
@@ -85,6 +102,57 @@
       background: #5b7ed4;
     }
 
+    .level-auswahl {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      padding: 24px;
+      background: #5b7ed4;
+    }
+
+    .level-auswahl[hidden] {
+      display: none;
+    }
+
+    .level-auswahl-inhalt {
+      width: min(100%, 760px);
+      text-align: center;
+      place-self: center;
+    }
+
+    .level-auswahl details {
+      width: min(320px, 100%);
+      text-align: left;
+    }
+
+    .level-auswahl h2 {
+      margin: 0 0 24px;
+      color: #ffffff;
+      font-size: 2rem;
+    }
+
+    .level-balken {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .level-knopf {
+      min-height: 150px;
+      padding: 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: #172033;
+      color: var(--text);
+      font-size: 1.5rem;
+    }
+
+    .level-knopf:hover {
+      background: #253552;
+    }
+
     .spiel-ende[hidden] {
       display: none;
     }
@@ -94,14 +162,18 @@
       padding: 28px;
       text-align: center;
       background: #172033;
-      border: 1px solid #929323;
+      border: 1px solid #ffffff;
       border-radius: 8px;
       box-shadow: 0 16px 40px #000000;
     }
 
     .spiel-ende h2 {
       margin: 0 0 12px;
-      color: var(--accent2);
+      color: #ffffff;
+    }
+
+    .spiel-ende strong {
+      color: #ffffff;
     }
 
     .spiel-ende p {
@@ -122,6 +194,16 @@
     button:hover {
       background: #7dd3fc;
     }
+
+    @media (max-width: 600px) {
+      .level-balken {
+        grid-template-columns: 1fr;
+      }
+
+      .level-knopf {
+        min-height: 80px;
+      }
+    }
   </style>
 </head>
 
@@ -129,17 +211,31 @@
   <div class="hud">
     <h1>Catch the Stars</h1>
     <p>Punkte: <strong id="score">0</strong> | Best: <strong id="best">0</strong> | Leben: <strong id="leben">3</strong></p>
+  </div>
+
+  <div class="magazin-anzeige">Magazin: <strong id="magazin">5 / 5</strong></div>
+
+  <div class="level-auswahl" id="level-auswahl">
     <details>
       <summary>Anleitung</summary>
       <ul>
+        <li>Wähle einen Schwierigkeitsgrad aus.</li>
         <li>Klicke auf das Spielfeld, um einen Schuss nach oben abzufeuern.</li>
-        <li>Bewege dein Raumschiff mit den Pfeiltasten links und rechts, mit A und D oder mit der Maus.</li>
-        <li>Fange die bunten Sterne, bevor sie den gruenen Boden erreichen.</li>
-        <li>Jeder gefangene Stern gibt einen Punkt.</li>
-        <li>Wenn ein Stern den Boden erreicht, verlierst du ein Leben. Das Spiel endet, wenn du keine Leben mehr hast.</li>
-        <li>Best zeigt deinen hoechsten Punktestand, bis du die Seite neu laedst.</li>
+        <li>Bewege dein Raumschiff mit den Pfeiltasten, A und D oder mit der Maus.</li>
+        <li>Triff Sterne mit deinen Schüssen, um Punkte zu erhalten.</li>
+        <li>Berührt ein Stern dein Raumschiff, verlierst du ein Leben.</li>
+        <li>Das Magazin hat fünf Schüsse und lädt jede Sekunde einen Schuss nach.</li>
+        <li>Sterne am unteren Rand verschwinden. Das Spiel endet, wenn du keine Leben mehr hast.</li>
       </ul>
     </details>
+    <div class="level-auswahl-inhalt">
+      <h2>Level Auswahl</h2>
+      <div class="level-balken">
+        <button class="level-knopf" data-level="leicht" type="button">Leicht</button>
+        <button class="level-knopf" data-level="mittel" type="button">Mittel</button>
+        <button class="level-knopf" data-level="schwer" type="button">Schwer</button>
+      </div>
+    </div>
   </div>
 
   <div class="spiel-ende" id="spiel-ende" hidden>

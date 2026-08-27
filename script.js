@@ -1,15 +1,30 @@
 let punkte = 0;
 let leben = 3;
 let bestePunkte = 0;
+const MAX_MAGAZIN = 5;
+let magazin = MAX_MAGAZIN;
+let nachladeTimerId = null;
+let sternIntervall = 30;
+let sternGeschwindigkeitMin = 2;
+let sternGeschwindigkeitMax = 4;
 let spieler;
+let raumschiffBild;
 let sterne = []; // [] erzeugt ein leeres Array, also eine Leere Liste
 let schuesse = [];
 let punkteText;
 let bestePunkteText;
 let lebenText;
+let magazinText;
 let spielEndeAnzeige;
 let spielEndePunkteText;
 let neuStartenKnopf;
+let levelAuswahl;
+let levelKnoepfe;
+
+// p5.js laedt Bilder vor dem Start des Spiels.
+function preload() {
+  raumschiffBild = loadImage("raumschiff.svg");
+}
 
 // Hier wird das Spiel vorbereitet.
 // p5.js ruft setup einmal am Anfang auf: https://p5js.org/reference/p5/setup/
@@ -29,21 +44,28 @@ function setup() {
   punkteText = document.getElementById("score");
   bestePunkteText = document.getElementById("best");
   lebenText = document.getElementById("leben");
+  magazinText = document.getElementById("magazin");
   spielEndeAnzeige = document.getElementById("spiel-ende");
   spielEndePunkteText = document.getElementById("spiel-ende-punkte");
   neuStartenKnopf = document.getElementById("neu-starten-knopf");
+  levelAuswahl = document.getElementById("level-auswahl");
+  levelKnoepfe = document.querySelectorAll("[data-level]");
   // addEventListener startet eine Funktion bei einem Klick auf den Button: https://developer.mozilla.org/de/docs/Web/API/EventTarget/addEventListener
   neuStartenKnopf.addEventListener("click", starteSpielNeu);
+  for (let levelKnopf of levelKnoepfe) {
+    levelKnopf.addEventListener("click", () => starteLevel(levelKnopf.dataset.level));
+  }
   aktualisiereAnzeige();
   // noCursor versteckt den Mauszeiger auf der Zeichenflaeche: https://p5js.org/reference/p5/noCursor/
   noCursor();
+  noLoop();
 }
 
 // Diese Funktion laeuft in jedem Spielbild.
 // p5.js ruft draw wiederholt fuer die Animation auf: https://p5js.org/reference/p5/draw/
 function draw() {
   // background fuellt die Zeichenflaeche mit einer Hintergrundfarbe: https://p5js.org/reference/p5/background/
-  background('#331c1c'); // Hintergrundfarbe des Spielfelds
+  background('#0f172a'); // Hintergrundfarbe des Spielfelds
 
   bewegeSpieler();
   zeichneSpieler();
@@ -53,8 +75,6 @@ function draw() {
   aktualisiereSchuesse();
   zeichneSchuesse();
   pruefeKollisionen();
-
-  zeichneBoden();
 }
 
 // Die Pfeiltasten und A/D bewegen den Spieler.
@@ -78,32 +98,13 @@ function bewegeSpieler() {
 
 // Der Spieler wird als kleines Raumschiff gezeichnet.
 function zeichneSpieler() {
-  // fill legt die Fuellfarbe fuer Formen fest: https://p5js.org/reference/p5/fill/
-  fill("#38bdf8");
-  // rectMode legt fest, wie die Position eines Rechtecks bestimmt wird: https://p5js.org/reference/p5/rectMode/
-  rectMode(CENTER);
-  // rect zeichnet ein Rechteck: https://p5js.org/reference/p5/rect/
-  rect(
-    spieler.positionX, // Waagerechte Position des Raumschiffs
-    spieler.positionY, // Senkrechte Position des Raumschiffs
-    spieler.breite, // Breite des Raumschiffs
-    spieler.hoehe,// Hoehe des Raumschiffs
-    8 // Rundung der Ecken
-  );
-
-  // fill legt die Fuellfarbe fuer den Feuerstrahl fest: https://p5js.org/reference/p5/fill/
-  fill("#facc15");
-  // circle zeichnet einen Kreis: https://p5js.org/reference/p5/circle/
-  circle(
-    spieler.positionX, // Waagerechte Position
-    spieler.positionY - 18, // Senkrechte Position ueber dem Raumschiff
-    12 // Durchmesser des Feuerstrahls
-  );
+  imageMode(CENTER);
+  image(raumschiffBild, spieler.positionX, spieler.positionY, 100, 67);
 }
 
-// Alle 35 Bilder erscheint ein neuer Stern.
+// Je nach gewaehltem Level erscheint ein neuer Stern.
 function erzeugeSterne() {
-  if (frameCount % 35 === 0) {
+  if (frameCount % sternIntervall === 0) {
     let stern = {
       // random erzeugt eine zufaellige Zahl: https://p5js.org/reference/p5/random/
       positionX: random(20, width - 20), // Zufallsposition zwischen linkem und rechtem Rand
@@ -111,8 +112,8 @@ function erzeugeSterne() {
       // random bestimmt auch die Groesse des Sterns: https://p5js.org/reference/p5/random/
       groesse: random(12, 22), // Zufallsgroesse zwischen 12 und 22
       // random bestimmt die Fallgeschwindigkeit: https://p5js.org/reference/p5/random/
-      geschwindigkeit: random(2, 4), // Zufallsgeschwindigkeit zwischen 2 und 4
-      farbe: erzeugeZufaelligeFarbe(),
+      geschwindigkeit: random(sternGeschwindigkeitMin, sternGeschwindigkeitMax),
+      farbe: erzeugeSternFarbe(),
     };
 
     // push fügt dem Array sterne ein neues Element (Stern) am Ende hinzu.
@@ -120,12 +121,9 @@ function erzeugeSterne() {
   }
 }
 
-// Diese Funktion erstellt eine zufaellige Farbe in der Schreibweise #rrggbb.
-function erzeugeZufaelligeFarbe() {
-  // random erzeugt eine zufaellige Zahl: https://p5js.org/reference/p5/random/
-  // floor rundet eine Zahl auf die naechste ganze Zahl ab: https://p5js.org/reference/p5/floor/
-  let farbNummer = floor(random(0, 16777216)); // Eine von 16.777.216 moeglichen Farben
-  return `#${farbNummer.toString(16).padStart(6, "0")}`;
+// Diese Funktion legt die gelbe Farbe aller Sterne fest.
+function erzeugeSternFarbe() {
+  return "#ffff00";
 }
 
 // Die Sterne fallen nach unten.
@@ -137,16 +135,9 @@ function aktualisiereSterne() {
     // sterne[index] ist der Stern an der aktuellen Stelle in der Liste.
     sterne[index].positionY += sterne[index].geschwindigkeit;
 
-    // Dieser Stern ist unter dem Spielfeld und wurde nicht gefangen.
+    // Dieser Stern ist unter dem Spielfeld und wird entfernt.
     if (sterne[index].positionY > height + 30) {
-      leben -= 1;
-      lebenText.textContent = leben;
       sterne.splice(index, 1);
-      if (leben <= 0) {
-        beendeSpiel();
-      }
-      // return beendet diese Funktion sofort.
-      return;
     }
   }
 }
@@ -176,11 +167,12 @@ function aktualisiereSchuesse () {
 }
 
 function zeichneSchuesse() {
+  fill("#ff0000");
   for (let schuss of schuesse) {
     circle(schuss.positionX, schuss.positionY, 10);
   }
 }
-// Hier wird geprueft, ob der Spieler einen Stern faengt.
+// Hier wird geprueft, ob Sterne das Raumschiff oder einen Schuss treffen.
 function pruefeKollisionen() {
   for (let index = sterne.length - 1; index >= 0; index = index -1) {
     let stern = sterne[index];
@@ -188,6 +180,21 @@ function pruefeKollisionen() {
     let linkerRandSpieler = spieler.positionX - spieler.breite / 2;
     let rechterRandSpieler = spieler.positionX + spieler.breite / 2;
     let obererRandSpieler = spieler.positionY - spieler.hoehe / 2;
+    let untererRandSpieler = spieler.positionY + spieler.hoehe / 2;
+    if (linkerRandSpieler < stern.positionX &&
+        rechterRandSpieler > stern.positionX &&
+        obererRandSpieler < stern.positionY &&
+        untererRandSpieler > stern.positionY) {
+      sterne.splice(index, 1);
+      leben -= 1;
+      aktualisiereAnzeige();
+      if (leben <= 0) {
+        beendeSpiel();
+        return;
+      }
+      continue;
+    }
+
     let abstandSchuss = 1000;
     for (let schuss of schuesse) {
       let abstandDieserSchuss = dist(
@@ -198,10 +205,7 @@ function pruefeKollisionen() {
       );
       abstandSchuss = min(abstandSchuss, abstandDieserSchuss);
     }
-    if ((linkerRandSpieler< stern.positionX && 
-        rechterRandSpieler > stern.positionX && 
-        obererRandSpieler < stern.positionY) || 
-      abstandSchuss < (stern.groesse + 10) / 2) {
+    if (abstandSchuss < (stern.groesse + 10) / 2) {
       sterne.splice(index, 1);
       punkte += 1;
       // max gibt den groesseren von zwei Werten zurueck: https://p5js.org/reference/p5/max/
@@ -224,14 +228,40 @@ function beendeSpiel() {
   noLoop();
 }
 
-// Der Button setzt das Spiel fuer eine neue Runde zurueck.
+// Der Button zeigt nach einer verlorenen Runde die Level-Auswahl.
 function starteSpielNeu() {
+  spielEndeAnzeige.hidden = true;
+  levelAuswahl.hidden = false;
+}
+
+// Ein Level setzt die Runde zurueck und bestimmt die Sternschwierigkeit.
+function starteLevel(level) {
+  if (level === "leicht") {
+    sternIntervall = 30;
+    sternGeschwindigkeitMin = 2;
+    sternGeschwindigkeitMax = 4;
+  } else if (level === "mittel") {
+    sternIntervall = 20;
+    sternGeschwindigkeitMin = 3;
+    sternGeschwindigkeitMax = 5;
+  } else {
+    sternIntervall = 13;
+    sternGeschwindigkeitMin = 4;
+    sternGeschwindigkeitMax = 7;
+  }
+
   punkte = 0;
   leben = 3;
+  magazin = MAX_MAGAZIN;
   sterne = [];
+  schuesse = [];
+  if (nachladeTimerId !== null) {
+    clearTimeout(nachladeTimerId);
+  }
+  nachladeTimerId = null;
   spieler.positionX = width / 2;
   aktualisiereAnzeige();
-  spielEndeAnzeige.hidden = true;
+  levelAuswahl.hidden = true;
   // loop laesst die Animation wieder weiterlaufen: https://p5js.org/reference/p5/loop/
   loop();
 }
@@ -241,6 +271,7 @@ function aktualisiereAnzeige() {
   punkteText.textContent = punkte;
   bestePunkteText.textContent = bestePunkte;
   lebenText.textContent = leben;
+  magazinText.textContent = `${magazin} / ${MAX_MAGAZIN}`;
 }
 
 // Der gruene Boden zeigt das Ende des Spielfelds.
@@ -261,11 +292,32 @@ function zeichneBoden() {
 function mouseMoved() {
   spieler.positionX = mouseX;
 }
+
+function starteNachladen() {
+  if (nachladeTimerId !== null || magazin === MAX_MAGAZIN) {
+    return;
+  }
+
+  nachladeTimerId = setTimeout(() => {
+    nachladeTimerId = null;
+    magazin += 1;
+    aktualisiereAnzeige();
+    starteNachladen();
+  }, 1000);
+}
+
 function mousePressed() {
+  if (magazin === 0) {
+    return;
+  }
+
   let schuss = {
     positionX: spieler.positionX,
     positionY: spieler.positionY,
   };
   console.log("Schuss abgefeuert:", schuss);
   schuesse.push(schuss);
+  magazin -= 1;
+  aktualisiereAnzeige();
+  starteNachladen();
 }
